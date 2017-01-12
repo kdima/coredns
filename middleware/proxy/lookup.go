@@ -3,11 +3,11 @@ package proxy
 // functions other middleware might want to use to do lookup in the same style as the proxy.
 
 import (
+	"log"
 	"sync/atomic"
 	"time"
 
 	"github.com/miekg/coredns/request"
-
 	"github.com/miekg/dns"
 )
 
@@ -91,6 +91,7 @@ func (p Proxy) lookup(state request.Request, r *dns.Msg) (*dns.Msg, error) {
 			if backendErr == nil {
 				return reply, nil
 			}
+			log.Printf("ERROR in backend: %s", backendErr)
 			timeout := host.FailTimeout
 			if timeout == 0 {
 				timeout = 10 * time.Second

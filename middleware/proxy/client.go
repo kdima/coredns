@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"fmt"
 	"net"
 	"time"
 
@@ -27,7 +28,6 @@ func (c *client) ServeDNS(w dns.ResponseWriter, r *dns.Msg, u *UpstreamHost) (*d
 	if err != nil {
 		return nil, err
 	}
-
 	reply, _, err := c.Exchange(r, co)
 
 	co.Close()
@@ -58,9 +58,14 @@ func (c *client) Exchange(m *dns.Msg, co net.Conn) (*dns.Msg, time.Duration, err
 	}
 
 	start := time.Now()
-
 	// Name needs to be normalized! Bug in go dns.
-	r, err := c.group.Do(m.Question[0].Name+t+cl, func() (interface{}, error) {
+	r, err := c.group.Do(m.Question[0].Name+t+cl, func() (res interface{}, err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				res = dns.Msg{}
+				err = fmt.Errorf("PANIC inside exchange: %s", r)
+			}
+		}()
 		ret, e := c.exchange(m, co)
 		return ret, e
 	})

@@ -3,6 +3,7 @@ package proxy
 
 import (
 	"errors"
+	"log"
 	"sync/atomic"
 	"time"
 
@@ -93,6 +94,7 @@ func (p Proxy) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (
 
 				return 0, nil
 			}
+			log.Printf("ERROR in backend: %s", backendErr)
 			timeout := host.FailTimeout
 			if timeout == 0 {
 				timeout = 10 * time.Second
