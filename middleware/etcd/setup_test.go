@@ -14,10 +14,10 @@ import (
 	"github.com/miekg/coredns/middleware/pkg/singleflight"
 	"github.com/miekg/coredns/middleware/proxy"
 	"github.com/miekg/coredns/middleware/test"
+	"github.com/miekg/coredns/middleware/pkg/tls"
 
 	etcdc "github.com/coreos/etcd/client"
 	"github.com/mholt/caddy"
-	"github.com/miekg/dns"
 	"golang.org/x/net/context"
 )
 
@@ -29,7 +29,8 @@ func newEtcdMiddleware() *Etcd {
 	ctxt, _ = context.WithTimeout(context.Background(), etcdTimeout)
 
 	endpoints := []string{"http://localhost:2379"}
-	client, _ := newEtcdClient(endpoints, "", "", "")
+	tlsc, _ := tls.NewTLSConfigFromArgs()
+	client, _ := newEtcdClient(endpoints, tlsc)
 
 	return &Etcd{
 		Proxy:      proxy.New([]string{"8.8.8.8:53"}),
@@ -66,11 +67,7 @@ func TestLookup(t *testing.T) {
 		m := tc.Msg()
 
 		rec := dnsrecorder.New(&test.ResponseWriter{})
-		_, err := etc.ServeDNS(ctxt, rec, m)
-		if err != nil {
-			t.Errorf("expected no error, got: %v for %s %s\n", err, m.Question[0].Name, dns.Type(m.Question[0].Qtype))
-			return
-		}
+		etc.ServeDNS(ctxt, rec, m)
 
 		resp := rec.Msg
 		sort.Sort(test.RRSet(resp.Answer))
